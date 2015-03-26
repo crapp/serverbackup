@@ -1,0 +1,2 @@
+#Folder to backup;Comma separated list of excludes relativ to Backupfolder; maximum age in days
+#/var/www/foo;bar/baz,datasalad.txt;100

@@ -1,0 +1,2 @@
+#tablename;{mysql|postgres};username;password;port;host;maximum age in days
+
