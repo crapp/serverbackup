@@ -175,7 +175,7 @@ createTarbackup()
   retValTar=$?
 
   # encrypt the archive
-  encryptFile $backupfile $ionice_class $ionice_level $cnice
+  encryptFile "$backupfile" "$ionice_class" "$ionice_level" "$cnice"
 
   # copy encrypted archive to backup folder
   cp -vf "${backupfile}.gpg" "${BACKUPDIR}/${folderToBackup}/${folderToBackup}_backup_${curDate}.tar.gz.gpg"
@@ -185,7 +185,7 @@ createTarbackup()
   rm -vf "$backupfile" "${backupfile}.gpg"
 
   printMessage "-n" "Backup status: "
-  printStatus $retValTar $retValCp $?
+  printStatus "$retValTar" "$retValCp" "$?"
 }
 
 ##
@@ -215,7 +215,7 @@ backupDatabase() {
     PGPASSWORD="$password" pg_dump -p $port -h "$host" -U "$username" "$1" | gzip > "$dbLocalFile"
   fi
 
-  encryptFile "$dbLocalFile"
+  encryptFile "$dbLocalFile" "2" "4" "10"
 
   cp -vf "${dbLocalFile}.gpg" "${BACKUPDIR}/db"
   rm -vf "$dbLocalFile" "${dbLocalFile}.gpg"
@@ -234,7 +234,7 @@ backupPackageList() {
 
   dpkg --get-selections > "$packageListFile"
 
-  encryptFile "$packageListFile"
+  encryptFile "$packageListFile" "2" "4" "10"
 
   cp -vf "${packageListFile}.gpg" "${BACKUPDIR}/packageList"
   rm -vf "${packageListFile}" "${packageListFile}.gpg"
