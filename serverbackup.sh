@@ -82,12 +82,15 @@ printMessage() {
 ##
 # @brief Encrypt file with gnupg
 # @param $1 file to encrypt
+# @param $2 ionice class
+# @param $3 ionice level
+# @param $4 nice level
 ##
 encryptFile() {
   # TODO: Add support for keys with password
   # Encrypt file $1 for User $GPG_USER using a gpg key without password. Use
   # trust-model always with care. Better to actually sign the key.
-  gpg --batch --yes --trust-model always -e -r "$GPG_USER" "$1"
+  ionice -c$2 -n$3 nice -n$4 gpg --batch --yes --trust-model always -e -r "$GPG_USER" "$1"
 }
 
 
@@ -135,19 +138,19 @@ createTarbackup()
   # create directories if missing
   mkdir -vp "${BACKUPDIR}/${folderToBackup}" "${BACKUPLOCALDIR}/${folderToBackup}"
 
-  use_ionice=false
-  ionice_class=""
-  ionice_level=""
+  ionice_class=2
+  ionice_level=4
+  cnice=10
 
   if [ "$3" != "" ]
   then
     IFS=',' read -ra ioniceArray <<< "$3"
-    if [ "${ioniceArray[0]}" == "1" ]
-    then
-      use_ionice=true
-      ionice_class=${ioniceArray[1]}
-      ionice_level=${ioniceArray[2]}
-    fi
+    ionice_class=${ioniceArray[0]}
+    ionice_level=${ioniceArray[1]}
+  fi
+  if [ "$4" != "" ]
+  then
+    cnice=$4
   fi
 
   if [ "$2" != "" ]
@@ -164,25 +167,15 @@ createTarbackup()
       fi
     done
     printMessage "Tar excludes: ${excludeOption}"
-    if [ $use_ionice = true ]
-    then
-      ionice -c$ionice_class -n$ionice_level tar czpf "$backupfile" $excludeOption -C "$1" .
-    else
-      tar czpf "$backupfile" $excludeOption -C "$1" .
-    fi
+    ionice -c${ionice_class} -n${ionice_level} nice -n${cnice} tar czpf "$backupfile" $excludeOption -C "$1" .
   else
-    if [ $use_ionice = true ]
-    then
-      ionice -c$ionice_class -n$ionice_level tar czpf "$backupfile" -C "$1" .
-    else
-      tar czpf "$backupfile" -C "$1" .
-    fi
+    ionice -c${ionice_class} -n${ionice_level} nice -n${cnice} tar czpf "$backupfile" -C "$1" .
   fi
   # save return value of tar command
   retValTar=$?
 
   # encrypt the archive
-  encryptFile $backupfile
+  encryptFile $backupfile $ionice_class $ionice_level $cnice
 
   # copy encrypted archive to backup folder
   cp -vf "${backupfile}.gpg" "${BACKUPDIR}/${folderToBackup}/${folderToBackup}_backup_${curDate}.tar.gz.gpg"
@@ -250,7 +243,7 @@ backupPackageList() {
 printMessage "-e" "\nStarting server backup"
 
 # read directories from file. semicolon is the separator
-while IFS=';' read bfolder excludes days ionice
+while IFS=';' read bfolder excludes days ionice cnice
 do
   if [ "$bfolder" == "" ] || [[ "$bfolder" == "#"*  ]]
   then
@@ -261,7 +254,7 @@ do
     Excludes: $excludes \n\
     Days max: $days \n"
 
-  createTarbackup $bfolder $excludes $ionice
+  createTarbackup $bfolder $excludes $ionice $cnice
   if [ "$days" != "" ] && [[ "$days" > 0 ]]
   then
     removeOldBackups 0 $bfolder $days
