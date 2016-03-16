@@ -1,2 +1,5 @@
-#Folder to backup;Comma separated list of excludes relativ to Backupfolder; maximum age in days
-#/var/www/foo;bar/baz,datasalad.txt;100
+# Folder to backup;
+# Comma separated list of excludes relativ to Backupfolder;
+# maximum age in days;
+# ionice comma seperated (0/1 to (de)activate, class, level)
+# /var/www/foo;bar/baz,datasalad.txt;100;0,2,5
