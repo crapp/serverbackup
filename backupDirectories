@@ -1,5 +1,7 @@
 # Folder to backup;
 # Comma separated list of excludes relativ to Backupfolder;
 # maximum age in days;
-# ionice comma seperated (0/1 to (de)activate, class, level)
-# /var/www/foo;bar/baz,datasalad.txt;100;0,2,5
+# ionice comma seperated (class, level)
+# nice value
+# ionice/nice will be applied for tar and gpg command
+# /var/www/foo;bar/baz,datasalad.txt;100;2,4;10
