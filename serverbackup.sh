@@ -252,7 +252,9 @@ do
 
   printMessage "-e" "Backup Folder: $bfolder \n\
     Excludes: $excludes \n\
-    Days max: $days \n"
+    Days max: $days \n\
+    ionice: $ionice \n\
+    nice: $cnice"
 
   createTarbackup $bfolder $excludes $ionice $cnice
   if [ "$days" != "" ] && [[ "$days" > 0 ]]
