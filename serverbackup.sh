@@ -256,10 +256,10 @@ do
     ionice: $ionice \n\
     nice: $cnice"
 
-  createTarbackup $bfolder $excludes $ionice $cnice
+  createTarbackup "$bfolder" "$excludes" "$ionice" "$cnice"
   if [ "$days" != "" ] && [[ "$days" > 0 ]]
   then
-    removeOldBackups 0 $bfolder $days
+    removeOldBackups 0 "$bfolder" "$days"
   fi
 
 done < $SCRIPTPATH/backupDirectories
@@ -276,11 +276,11 @@ do
     DBMS: $dbms \n\
     Days max: $days \n"
 
-  backupDatabase $dbname $dbms $connparams
+  backupDatabase "$dbname" "$dbms" "$connparams"
 
   if [ "$days" != "" ] && [[ "$days" > 0 ]]
   then
-    removeOldBackups 1 $dbname $days
+    removeOldBackups 1 "$dbname" "$days"
   fi
 done < $SCRIPTPATH/backupDatabases
 
