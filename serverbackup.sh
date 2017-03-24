@@ -34,9 +34,11 @@ BACKUPLOCALDIR=$2
 # Create a backup of installed packages? 1 Yes 0 No
 # Currently only dpkg supported, but you can change that easily yourself
 BACKUPPKGLIST=$3
+# Encrypt data with GPG. 1 Yes 0 No
+GPG_ENCRYPT=$4
 # GPG User to encrypt the data for. The public key must have been imported to the
 # users keyring which runs this script
-GPG_USER=$4
+GPG_USER=$5
 #####
 
 # Absolute path to this script, e.g. /home/user/bin/foo.sh
@@ -102,23 +104,31 @@ encryptFile() {
 # @param $3 Maximum days
 ##
 removeOldBackups() {
+
+  gpgFileExt=""
+  if [ $GPG_ENCRYPT == 1 ]
+  then
+    # encrypt the archive
+    gpgFileExt=".gpg"
+  fi
+
   if [ $1 == 2 ]
   then
     findDirName="${BACKUPDIR}/packageList"
-    findPattern="packageList_*.list.gpg"
+    findPattern="packageList_*.list${gpgFileExt}"
   fi
   if [ $1 == 1 ]
   then
     findDirName="${BACKUPDIR}/db"
-    findPattern="*_db_${2}_*.sql.gz.gpg"
+    findPattern="*_db_${2}_*.sql.gz${gpgFileExt}"
   fi
   if [ $1 == 0 ]
   then
     folderName=$(basename "$2")
     findDirName="${BACKUPDIR}/${folderName}"
-    findPattern="${folderName}_backup_*.tar.gz.gpg"
+    findPattern="${folderName}_backup_*.tar.gz${gpgFileExt}"
   fi
-  printMessage "-n" "Searching in folder: $findDirName for this pattern ${findPattern}. "
+  printMessage "-n" "Searching in folder: $findDirName with this pattern ${findPattern}. "
   printMessage "Will delete all files older than $3 days."
   find "$findDirName" -name "$findPattern" -mtime +${3} -exec rm -vf {} \;
 }
@@ -174,15 +184,20 @@ createTarbackup()
   # save return value of tar command
   retValTar=$?
 
-  # encrypt the archive
-  encryptFile "$backupfile" "$ionice_class" "$ionice_level" "$cnice"
+  gpgFileExt=""
+  if [ $GPG_ENCRYPT == 1 ]
+  then
+    # encrypt the archive
+    gpgFileExt=".gpg"
+    encryptFile "$backupfile" "$ionice_class" "$ionice_level" "$cnice"
+  fi
 
   # copy encrypted archive to backup folder
-  cp -vf "${backupfile}.gpg" "${BACKUPDIR}/${folderToBackup}/${folderToBackup}_backup_${curDate}.tar.gz.gpg"
+  cp -vf "${backupfile}${gpgFileExt}" "${BACKUPDIR}/${folderToBackup}/${folderToBackup}_backup_${curDate}.tar.gz${gpgFileExt}"
   retValCp=$?
 
   # delete local backup
-  rm -vf "$backupfile" "${backupfile}.gpg"
+  rm -vf "$backupfile" "${backupfile}${gpgFileExt}"
 
   printMessage "-n" "Backup status: "
   printStatus "$retValTar" "$retValCp" "$?"
@@ -215,10 +230,16 @@ backupDatabase() {
     PGPASSWORD="$password" pg_dump -p $port -h "$host" -U "$username" "$1" | gzip > "$dbLocalFile"
   fi
 
-  encryptFile "$dbLocalFile" "2" "4" "10"
+  gpgFileExt=""
+  if [ $GPG_ENCRYPT == 1 ]
+  then
+    # encrypt the archive
+    gpgFileExt=".gpg"
+    encryptFile "$dbLocalFile" "2" "4" "10"
+  fi
 
-  cp -vf "${dbLocalFile}.gpg" "${BACKUPDIR}/db"
-  rm -vf "$dbLocalFile" "${dbLocalFile}.gpg"
+  cp -vf "${dbLocalFile}${gpgFileExt}" "${BACKUPDIR}/db"
+  rm -vf "$dbLocalFile" "${dbLocalFile}${gpgFileExt}"
 }
 
 ##
@@ -234,10 +255,16 @@ backupPackageList() {
 
   dpkg --get-selections > "$packageListFile"
 
-  encryptFile "$packageListFile" "2" "4" "10"
+  gpgFileExt=""
+  if [ $GPG_ENCRYPT == 1 ]
+  then
+    # encrypt the archive
+    gpgFileExt=".gpg"
+    encryptFile "$packageListFile" "2" "4" "10"
+  fi
 
-  cp -vf "${packageListFile}.gpg" "${BACKUPDIR}/packageList"
-  rm -vf "${packageListFile}" "${packageListFile}.gpg"
+  cp -vf "${packageListFile}${gpgFileExt}" "${BACKUPDIR}/packageList"
+  rm -vf "${packageListFile}" "${packageListFile}${gpgFileExt}"
 }
 
 printMessage "-e" "\nStarting server backup"
