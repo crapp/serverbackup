@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Simple bash script to perform server backups
-# Copyright (C) 2015, 2016 Christian Rapp
+# Copyright (C) 2015, 2016, 2017 Christian Rapp
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ fi
 #
 # First Parameter is the remote backup directory.
 BACKUPDIR=$1
-# Second parameter is the local backup directory.
+# Second parameter is the local backup directory or you could also say this is a 
+# temp dir
 BACKUPLOCALDIR=$2
 # Create a backup of installed packages? 1 Yes 0 No
 # Currently only dpkg supported, but you can change that easily yourself
@@ -80,7 +81,6 @@ printMessage() {
   echo $echoVar "$(date +'%Y-%m-%d %H:%M:%S'): $msg"
 }
 
-
 ##
 # @brief Encrypt file with gnupg
 # @param $1 file to encrypt
@@ -94,8 +94,6 @@ encryptFile() {
   # trust-model always with care. Better to actually sign the key.
   ionice -c$2 -n$3 nice -n$4 gpg --batch --yes --trust-model always -e -r "$GPG_USER" "$1"
 }
-
-
 
 ##
 # @brief Remove backup files no longer required
@@ -267,7 +265,24 @@ backupPackageList() {
   rm -vf "${packageListFile}" "${packageListFile}${gpgFileExt}"
 }
 
-printMessage "-e" "\nStarting server backup"
+printMessage "-e" "Starting server backup"
+
+if [ $# != 5 ]
+then
+  printMessage "-e" "Number of arguments not matching. Expected 5 arguments got only ${#}"
+  exit 1
+fi
+
+if [ "$BACKUPDIR" == "" ] || [ ! -d "$BACKUPDIR" ]
+then
+  printMessage "-e" "Backup directory does not exist or is not set"
+  exit 1
+fi
+if [ "$BACKUPLOCALDIR" == "" ] || [ ! -d "$BACKUPLOCALDIR" ]
+then
+  printMessage "-e" "Backup temp directory does not exist or is not set"
+  exit 1
+fi
 
 # read directories from file. semicolon is the separator
 while IFS=';' read bfolder excludes days ionice cnice
@@ -291,7 +306,7 @@ do
 
 done < $SCRIPTPATH/backupDirectories
 
-# read databases to backup from file.
+# read databases from file.
 while IFS=';' read dbname dbms connparams days
 do
   if [ "$dbname" == "" ] || [[ "$dbname" == "#"*  ]]
